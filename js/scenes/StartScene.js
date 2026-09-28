@@ -9,20 +9,50 @@ class StartScene extends Phaser.Scene {
   }
 
   preload() {
+    // ============================================
+    // 1. LOAD SEMUA KARAKTER (5 karakter × 5 sprite)
+    // ============================================
     Object.keys(ASSETS.characters).forEach((key) => {
       const c = ASSETS.characters[key];
       this.load.image(`${key}_front`, c.front);
       this.load.image(`${key}_walk_a`, c.walkA);
       this.load.image(`${key}_walk_b`, c.walkB);
+      this.load.image(`${key}_jump`, c.jump);
+      this.load.image(`${key}_hit`, c.hit);
+    });
+
+    // ============================================
+    // 2. LOAD SEMUA BACKGROUND (5 stage)
+    // ============================================
+    ASSETS.backgrounds.forEach((bgPath, i) => {
+      this.load.image("bg_" + i, bgPath);
     });
     this.load.image("bgStart", ASSETS.bgStart);
+
+    // ============================================
+    // 3. LOAD SEMUA PLATFORM (5 stage)
+    // ============================================
+    ASSETS.platforms.forEach((platPath, i) => {
+      this.load.image("platform_" + i, platPath);
+    });
+
+    // ============================================
+    // 4. LOAD OBJEK GAME (box, key, enemy, spike)
+    // ============================================
+    this.load.image("box", ASSETS.box);
+    this.load.image("key", ASSETS.key);
+    this.load.image("ground_tile", ASSETS.groundTile);
+    this.load.image("enemy_walk_a", ASSETS.enemyWalkA);
+    this.load.image("enemy_walk_b", ASSETS.enemyWalkB);
+    this.load.image("spike", ASSETS.spike);
+
+    // ============================================
+    // 5. BGM (opsional)
+    // ============================================
     this.load.audio("bgm", "assets/audio/bgm.mp3");
   }
 
   create() {
-    this.bgmSound = this.sound.add("bgm", { loop: true, volume: 0.5 });
-    this.bgmSound.play();
-
     this.cameras.main.fadeIn(500);
 
     // ---------- BACKGROUND ----------
@@ -40,21 +70,15 @@ class StartScene extends Phaser.Scene {
     if (namaEl) namaEl.value = "";
     if (absenEl) absenEl.value = "";
 
-    // ============================================================
-    // BIKIN ANIMASI JALAN UNTUK SEMUA KARAKTER
-    // ============================================================
-    // Setiap karakter punya 1 animasi: "{key}_walkAnim"
-    // Frame-nya bergantian: walk_a → walk_b → walk_a → ...
-    Object.keys(ASSETS.characters).forEach((key) => {
-      if (!this.anims.exists(`${key}_walkAnim`)) {
-        this.anims.create({
-          key: `${key}_walkAnim`,
-          frames: [{ key: `${key}_walk_a` }, { key: `${key}_walk_b` }],
-          frameRate: 6, // 6 frame per detik (cukup untuk langkah natural)
-          repeat: -1, // Loop selamanya
-        });
+    // ---------- BGM ----------
+    if (this.cache.audio.exists("bgm")) {
+      if (!this.bgmSound || !this.bgmSound.isPlaying) {
+        this.bgmSound = this.sound.add("bgm", { loop: true, volume: 0.4 });
+        this.bgmSound.play();
       }
-    });
+    } else {
+      console.warn("⚠️ BGM gak ke-load");
+    }
 
     // ---------- JUDUL ----------
     this.add
@@ -90,20 +114,17 @@ class StartScene extends Phaser.Scene {
 
     this.selectedChar = charKeys[0];
     this.charBoxes = {};
-    this.charPreviews = {}; // ← BARU: nyimpen sprite preview
+    this.charPreviews = {};
 
     charKeys.forEach((key, i) => {
       const x = startX + i * gapX;
       const c = ASSETS.characters[key];
 
-      // Box pilihan
       const box = this.add.rectangle(x, charY, boxW, boxH, 0xffffff, 0.1).setStrokeStyle(3, 0x666666).setInteractive({ useHandCursor: true });
 
-      // ← UBAH: dari add.image ke add.sprite (biar bisa animasi)
       const preview = this.add.sprite(x, charY - 3, `${key}_front`).setScale(0.22);
       this.charPreviews[key] = preview;
 
-      // Nama karakter
       this.add
         .text(x, charY + boxH / 2 + 10, c.name, {
           fontSize: "13px",
@@ -147,33 +168,15 @@ class StartScene extends Phaser.Scene {
     });
   }
 
-  // ============================================================
-  // SELECT CHARACTER — dengan animasi jalan
-  // ============================================================
   selectCharacter(key) {
     this.selectedChar = key;
-
-    // Update visual box (border + fill)
     Object.keys(this.charBoxes).forEach((k) => {
-      if (k === key) {
+      if (k === this.selectedChar) {
         this.charBoxes[k].setStrokeStyle(4, 0xfbd000);
         this.charBoxes[k].setFillStyle(0xfbd000, 0.3);
       } else {
         this.charBoxes[k].setStrokeStyle(3, 0x666666);
         this.charBoxes[k].setFillStyle(0xffffff, 0.1);
-      }
-    });
-
-    // Update animasi karakter
-    Object.keys(this.charPreviews).forEach((k) => {
-      const preview = this.charPreviews[k];
-      if (k === key) {
-        // Yang DIPILIH → jalan
-        preview.anims.play(`${k}_walkAnim`, true);
-      } else {
-        // Yang TIDAK dipilih → diam (kembali ke front)
-        preview.anims.stop();
-        preview.setTexture(`${k}_front`);
       }
     });
   }

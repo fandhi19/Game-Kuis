@@ -30,24 +30,7 @@ class StageScene extends Phaser.Scene {
 
   // ---------- PRELOAD ----------
   preload() {
-    const c = ASSETS.characters[this.characterKey] || ASSETS.characters["green"];
-    this.load.image("player_front", c.front);
-    this.load.image("player_walk_a", c.walkA);
-    this.load.image("player_walk_b", c.walkB);
-    this.load.image("player_jump", c.jump);
-    this.load.image("player_hit", c.hit);
-
-    this.load.image("box", ASSETS.box);
-    this.load.image("key", ASSETS.key);
-    const platformPath = ASSETS.platforms[this.stageIndex] || ASSETS.platforms[0];
-    this.load.image("platform_" + this.stageIndex, platformPath);
-    this.load.image("ground_tile", ASSETS.groundTile);
-    this.load.image("enemy_walk_a", ASSETS.enemyWalkA);
-    this.load.image("enemy_walk_b", ASSETS.enemyWalkB);
-    this.load.image("spike", ASSETS.spike);
-
-    const bgPath = ASSETS.backgrounds[this.stageIndex] || ASSETS.backgrounds[0];
-    this.load.image("bg_" + this.stageIndex, bgPath);
+    //
   }
 
   // ---------- CREATE ----------
@@ -795,9 +778,10 @@ class StageScene extends Phaser.Scene {
   // ============================================================
   goToNextStage() {
     this.isTransitioning = true;
-    this.cameras.main.fadeOut(600);
+    this.cameras.main.fadeOut(400); // ← dari 600 jadi 400ms
 
-    this.time.delayedCall(800, () => {
+    this.time.delayedCall(500, () => {
+      // ← dari 800 jadi 500ms
       if (this.stageIndex + 1 < STAGES.length) {
         this.scene.start("StageScene", {
           stageIndex: this.stageIndex + 1,
