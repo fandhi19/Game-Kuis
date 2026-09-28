@@ -338,7 +338,7 @@ class StartScene extends Phaser.Scene {
     this.cameras.main.fadeOut(500);
     this.time.delayedCall(500, () => {
       this.scene.start("StageScene", {
-        stageIndex: 1,
+        stageIndex: 0,
         studentName: nama,
         studentNumber: absen,
         characterKey: this.selectedChar,
