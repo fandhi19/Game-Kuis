@@ -11,7 +11,7 @@ const config = {
   pixelArt: true,
   parent: "game-wrapper",
 
-  // RESPONSIVE SCALING — biar auto-fit di semua layar
+  // RESPONSIVE SCALING — FIT mempertahankan rasio 2:1, pas untuk semua layar
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

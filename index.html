@@ -67,18 +67,23 @@
 
     /* FULLSCREEN KHUSUS MOBILE / TABLET */
     @media (max-width: 1000px), (pointer: coarse) {
+      #game-container {
+        padding: 0;
+        background: #000;
+      }
       #game-wrapper {
-        width: 100% !important;
-        height: 100% !important;
+        /* Isi layar semaksimal mungkin dengan rasio 2:1 */
+        width: min(100vw, 200dvh) !important;
+        height: min(50vw, 100dvh) !important;
         max-width: none !important;
         max-height: none !important;
-        aspect-ratio: auto !important;
+        aspect-ratio: 2 / 1 !important;
         border-radius: 0 !important;
         box-shadow: none !important;
       }
       canvas {
         margin: 0 !important;
-        object-fit: fill !important;
+        object-fit: contain !important;
       }
     }
 
