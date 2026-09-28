@@ -81,6 +81,13 @@ class StageScene extends Phaser.Scene {
     this.setupColliders();
 
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    // ============================================================
+    // TOUCH CONTROLS (cuma muncul di HP/tablet)
+    // ============================================================
+    if (window.IS_TOUCH_DEVICE) {
+      this.createTouchControls();
+    }
   }
 
   // ============================================================
@@ -356,6 +363,119 @@ class StageScene extends Phaser.Scene {
   }
 
   // ============================================================
+  // TOUCH CONTROLS — tombol virtual untuk mobile
+  // ============================================================
+  createTouchControls() {
+    const alpha = 0.35;
+    const btnSize = 55;
+    const btnColor = 0x000000;
+    const iconColor = "#ffffff";
+
+    // State tombol (buat tracking touch)
+    this.touchLeft = false;
+    this.touchRight = false;
+    this.touchJump = false;
+
+    // ---------- TOMBOL KIRI ----------
+    const btnLeft = this.add
+      .circle(60, 340, btnSize / 2, btnColor, alpha)
+      .setStrokeStyle(3, 0xffffff, 0.6)
+      .setDepth(500)
+      .setScrollFactor(0)
+      .setInteractive();
+
+    this.add
+      .text(60, 340, "◀", {
+        fontSize: "26px",
+        fontFamily: "Arial",
+        color: iconColor,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(501)
+      .setScrollFactor(0);
+
+    // ---------- TOMBOL KANAN ----------
+    const btnRight = this.add
+      .circle(140, 340, btnSize / 2, btnColor, alpha)
+      .setStrokeStyle(3, 0xffffff, 0.6)
+      .setDepth(500)
+      .setScrollFactor(0)
+      .setInteractive();
+
+    this.add
+      .text(140, 340, "▶", {
+        fontSize: "26px",
+        fontFamily: "Arial",
+        color: iconColor,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(501)
+      .setScrollFactor(0);
+
+    // ---------- TOMBOL LOMPAT ----------
+    const btnJump = this.add
+      .circle(740, 340, btnSize / 2, btnColor, alpha)
+      .setStrokeStyle(3, 0xffffff, 0.6)
+      .setDepth(500)
+      .setScrollFactor(0)
+      .setInteractive();
+
+    this.add
+      .text(740, 340, "▲", {
+        fontSize: "26px",
+        fontFamily: "Arial",
+        color: iconColor,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(501)
+      .setScrollFactor(0);
+
+    // ---------- EVENT HANDLERS ----------
+    // Pakai pointerdown/pointerup biar bisa ditahan
+    btnLeft.on("pointerdown", () => {
+      this.touchLeft = true;
+      btnLeft.setFillStyle(0xffffff, 0.6);
+    });
+    btnLeft.on("pointerup", () => {
+      this.touchLeft = false;
+      btnLeft.setFillStyle(btnColor, alpha);
+    });
+    btnLeft.on("pointerout", () => {
+      this.touchLeft = false;
+      btnLeft.setFillStyle(btnColor, alpha);
+    });
+
+    btnRight.on("pointerdown", () => {
+      this.touchRight = true;
+      btnRight.setFillStyle(0xffffff, 0.6);
+    });
+    btnRight.on("pointerup", () => {
+      this.touchRight = false;
+      btnRight.setFillStyle(btnColor, alpha);
+    });
+    btnRight.on("pointerout", () => {
+      this.touchRight = false;
+      btnRight.setFillStyle(btnColor, alpha);
+    });
+
+    btnJump.on("pointerdown", () => {
+      this.touchJump = true;
+      btnJump.setFillStyle(0xffffff, 0.6);
+    });
+    btnJump.on("pointerup", () => {
+      this.touchJump = false;
+      btnJump.setFillStyle(btnColor, alpha);
+    });
+    btnJump.on("pointerout", () => {
+      this.touchJump = false;
+      btnJump.setFillStyle(btnColor, alpha);
+    });
+  }
+
+  // ============================================================
   // COLLIDERS
   // ============================================================
   setupColliders() {
@@ -392,8 +512,9 @@ class StageScene extends Phaser.Scene {
     }
 
     // ---------- INPUT & ANIMASI PLAYER ----------
-    const movingLeft = this.cursors.left.isDown;
-    const movingRight = this.cursors.right.isDown;
+    // Gabungkan input keyboard + touch
+    const movingLeft = this.cursors.left.isDown || this.touchLeft === true;
+    const movingRight = this.cursors.right.isDown || this.touchRight === true;
     const onGround = this.player.body.blocked.down || this.player.body.touching.down;
 
     if (!this.isInvulnerable) {
@@ -407,9 +528,12 @@ class StageScene extends Phaser.Scene {
         this.player.setVelocityX(0);
       }
 
-      if (this.cursors.up.isDown && onGround) {
+      const jumpPressed = this.cursors.up.isDown || this.touchJump === true;
+
+      if (jumpPressed && onGround) {
         this.player.setVelocityY(-480);
         audioFX.playJump();
+        this.touchJump = false; // reset biar gak loncat terus
       }
     }
 
