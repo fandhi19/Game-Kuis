@@ -65,6 +65,23 @@
       height: 100% !important;
     }
 
+    /* FULLSCREEN KHUSUS MOBILE / TABLET */
+    @media (max-width: 1000px), (pointer: coarse) {
+      #game-wrapper {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        aspect-ratio: auto !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+      canvas {
+        margin: 0 !important;
+        object-fit: fill !important;
+      }
+    }
+
     /* ---------- FORM INPUT (POSITIONED RELATIVE TO GAME WRAPPER) ---------- */
     #start-form {
       position: absolute;
