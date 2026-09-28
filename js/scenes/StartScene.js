@@ -16,7 +16,7 @@ class StartScene extends Phaser.Scene {
       this.load.image(`${key}_walk_b`, c.walkB);
     });
     this.load.image("bgStart", ASSETS.bgStart);
-    this.load.audio("bgm", "assets/Audio/bgm.mp3");
+    this.load.audio("bgm", "assets/audio/bgm.mp3");
   }
 
   create() {
