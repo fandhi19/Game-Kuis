@@ -1,6 +1,6 @@
 // ============================================================
 // FILE: QuestionScene.js
-// FUNGSI: Overlay soal di atas StageScene
+// FUNGSI: Overlay soal di atas StageScene (Responsive & Animated)
 // ============================================================
 
 class QuestionScene extends Phaser.Scene {
@@ -19,82 +19,117 @@ class QuestionScene extends Phaser.Scene {
     const q = QUESTIONS[this.globalIndex];
 
     // ---------- OVERLAY GELAP ----------
-    this.add.rectangle(400, 200, 800, 400, 0x000000, 0.85).setDepth(100);
+    this.overlay = this.add.rectangle(400, 200, 800, 400, 0x000000, 0.85).setDepth(100);
 
-    // ---------- PANEL PUTIH ----------
-    this.add.rectangle(400, 200, 780, 395, 0xffffff).setStrokeStyle(6, 0x000000).setDepth(101);
+    // ---------- PANEL UTAMA CONTAINER ----------
+    this.panelContainer = this.add.container(400, 200).setDepth(101);
 
-    // ---------- LABEL SOAL (pojok kiri atas) ----------
-    this.add
-      .text(25, 15, `SOAL ${this.globalIndex + 1} DARI 10`, {
-        fontSize: "13px",
-        fontFamily: "Arial",
-        color: "#666666",
-        fontStyle: "bold",
-      })
-      .setOrigin(0, 0) // ← Kiri-atas (gak akan nabrak teks soal)
-      .setDepth(102);
+    // Background Panel Putih
+    const panelBg = this.add.rectangle(0, 0, 760, 375, 0xffffff).setStrokeStyle(5, 0x000000);
 
-    // ---------- TEKS SOAL (top-anchored) ----------
-    // Pakai setOrigin(0.5, 0) → teks tumbuh ke BAWAH dari y=45
-    // Jadi gak akan nabrak label di atas
-    this.add
-      .text(400, 45, q.q, {
-        fontSize: "12px", // ← Font diperkecil
+    // Header strip kuning
+    const headerBg = this.add.rectangle(0, -165, 760, 40, 0xfbd000).setStrokeStyle(3, 0x000000);
+
+    // Teks Label Header
+    const labelText = this.add
+      .text(0, -165, `❓ SOAL ${this.globalIndex + 1} DARI 10`, {
+        fontSize: "14px",
         fontFamily: "Arial",
         color: "#000000",
-        align: "center",
-        wordWrap: { width: 720 },
-        lineSpacing: 2,
+        fontStyle: "bold",
       })
-      .setOrigin(0.5, 0) // ← KUNCI: top-center anchor
-      .setDepth(102);
+      .setOrigin(0.5);
+
+    // Teks Pertanyaan (wrapped & top-anchored)
+    const questionText = this.add
+      .text(0, -130, q.q, {
+        fontSize: "13px",
+        fontFamily: "Arial",
+        color: "#1e293b",
+        align: "center",
+        fontStyle: "bold",
+        wordWrap: { width: 700 },
+        lineSpacing: 3,
+      })
+      .setOrigin(0.5, 0);
+
+    this.panelContainer.add([panelBg, headerBg, labelText, questionText]);
 
     // ---------- TOMBOL JAWABAN (4 pilihan) ----------
     this.buttons = [];
-    const startY = 260; // ← dari 250 jadi 260
-    const gap = 36; // ← dari 38 jadi 36
+    const startY = 40;
+    const gap = 38;
 
     q.options.forEach((opt, i) => {
       const y = startY + i * gap;
 
-      // Background tombol
-      const btnBg = this.add.rectangle(400, y, 720, 30, 0xfbd000).setStrokeStyle(3, 0x000000).setDepth(102).setInteractive({ useHandCursor: true });
+      const btnContainer = this.add.container(0, y);
 
-      // Teks tombol dengan label A/B/C/D
+      const btnBg = this.add
+        .rectangle(0, 0, 700, 32, 0xf8fafc)
+        .setStrokeStyle(2, 0x94a3b8)
+        .setInteractive({ useHandCursor: true });
+
       const labels = ["A", "B", "C", "D"];
       const btnText = this.add
-        .text(400, y, `${labels[i]}. ${opt}`, {
+        .text(-330, 0, `${labels[i]}. ${opt}`, {
           fontSize: "13px",
           fontFamily: "Arial",
-          color: "#000000",
+          color: "#0f172a",
           fontStyle: "bold",
         })
-        .setOrigin(0.5)
-        .setDepth(103);
+        .setOrigin(0, 0.5);
 
-      // Hover efek
-      btnBg.on("pointerover", () => btnBg.setFillStyle(0xffdd44));
-      btnBg.on("pointerout", () => btnBg.setFillStyle(0xfbd000));
+      btnContainer.add([btnBg, btnText]);
+      this.panelContainer.add(btnContainer);
 
-      // Klik handler
-      btnBg.on("pointerdown", () => {
-        this.handleAnswer(i, q, btnBg, btnText);
+      // Hover / Touch interaction
+      btnBg.on("pointerover", () => {
+        btnBg.setFillStyle(0xe2e8f0);
+        btnBg.setStrokeStyle(2, 0x2563eb);
       });
 
-      this.buttons.push({ bg: btnBg, text: btnText });
+      btnBg.on("pointerout", () => {
+        btnBg.setFillStyle(0xf8fafc);
+        btnBg.setStrokeStyle(2, 0x94a3b8);
+      });
+
+      btnBg.on("pointerdown", () => {
+        this.tweens.add({
+          targets: btnContainer,
+          scaleX: 0.98,
+          scaleY: 0.98,
+          duration: 60,
+          yoyo: true,
+          onComplete: () => {
+            this.handleAnswer(i, q, btnBg, btnText);
+          },
+        });
+      });
+
+      this.buttons.push({ bg: btnBg, text: btnText, container: btnContainer });
+    });
+
+    // Pop-in Animation untuk panel
+    this.panelContainer.setScale(0.85);
+    this.panelContainer.setAlpha(0);
+    this.tweens.add({
+      targets: this.panelContainer,
+      scaleX: 1.0,
+      scaleY: 1.0,
+      alpha: 1.0,
+      duration: 250,
+      ease: "Back.easeOut",
     });
   }
 
   handleAnswer(chosenIndex, q, btnBg, btnText) {
-    // Nonaktifkan semua tombol biar gak klik 2x
     this.buttons.forEach((b) => b.bg.disableInteractive());
 
-    // Sorot pilihan yang dipilih (biru)
-    btnBg.setFillStyle(0x2196f3);
+    btnBg.setFillStyle(0x2563eb);
+    btnBg.setStrokeStyle(3, 0x1d4ed8);
     btnText.setColor("#ffffff");
 
-    // Catat jawaban (TANPA info benar/salah ke user)
     const answerData = {
       namaSiswa: this.studentName,
       stage: this.stageIndex + 1,
@@ -111,9 +146,16 @@ class QuestionScene extends Phaser.Scene {
       this.onAnswer(answerData);
     }
 
-    // Tutup overlay setelah delay singkat
-    this.time.delayedCall(400, () => {
-      this.closeScene();
+    this.tweens.add({
+      targets: this.panelContainer,
+      scaleX: 0.9,
+      scaleY: 0.9,
+      alpha: 0,
+      duration: 200,
+      delay: 300,
+      onComplete: () => {
+        this.closeScene();
+      },
     });
   }
 
@@ -126,3 +168,4 @@ class QuestionScene extends Phaser.Scene {
     this.scene.stop();
   }
 }
+

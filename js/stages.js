@@ -13,7 +13,7 @@ const STAGES = [
     groundColor: 0x8b4513,
     strokeColor: 0x000000,
     grounds: [
-      { x: 400, y: 420, w: 800, h: 180 }, // ← dari y:380,h:40 → y:400,h:180
+      { x: 400, y: 425, w: 800, h: 180 }, // ← dari y:380,h:40 → y:400,h:180
     ],
     platforms: [
       { x: 200, y: 270, w: 120, h: 20, sink: 2 },
@@ -40,7 +40,7 @@ const STAGES = [
     groundColor: 0x8b4513,
     strokeColor: 0x000000,
     grounds: [
-      { x: 400, y: 420, w: 800, h: 180 }, // ← dari y:380,h:40 → y:400,h:180
+      { x: 400, y: 425, w: 800, h: 180 }, // ← dari y:380,h:40 → y:400,h:180
     ],
     platforms: [
       { x: 150, y: 280, w: 100, h: 30, sink: 16 },

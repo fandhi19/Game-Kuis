@@ -1,6 +1,6 @@
 // ============================================================
 // FILE: main.js
-// FUNGSI: Inisialisasi Phaser dengan responsive scaling
+// FUNGSI: Inisialisasi Phaser dengan responsive scaling & multi-touch
 // ============================================================
 
 const config = {
@@ -19,11 +19,16 @@ const config = {
     height: 400,
   },
 
+  // MULTI-TOUCH SUPPORT (agar bisa tekan Kiri/Kanan & Lompat bersamaan)
+  input: {
+    activePointers: 3,
+  },
+
   physics: {
     default: "arcade",
     arcade: {
       gravity: { y: 900 },
-      debug: false,
+      debug: true,
     },
   },
 
@@ -36,7 +41,7 @@ const game = new Phaser.Game(config);
 // DETEKSI APAKAH PERANGKAT TOUCH (HP/TABLET)
 // ============================================================
 const isTouchDevice = () => {
-  return "ontouchstart" in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
 // Simpan global biar bisa diakses scene

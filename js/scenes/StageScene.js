@@ -22,6 +22,7 @@ class StageScene extends Phaser.Scene {
     this.isPaused = false;
     this.isTransitioning = false;
     this.isInvulnerable = false;
+    this.isKnockedBack = false;
     this.hasKey = [false, false];
 
     this.lastHitDirX = -1;
@@ -31,23 +32,31 @@ class StageScene extends Phaser.Scene {
   // ---------- PRELOAD ----------
   preload() {
     const c = ASSETS.characters[this.characterKey] || ASSETS.characters["green"];
-    this.load.image("player_front", c.front);
-    this.load.image("player_walk_a", c.walkA);
-    this.load.image("player_walk_b", c.walkB);
-    this.load.image("player_jump", c.jump);
-    this.load.image("player_hit", c.hit);
+    const charKey = this.characterKey || "green";
 
-    this.load.image("box", ASSETS.box);
-    this.load.image("key", ASSETS.key);
+    const safeLoad = (key, path) => {
+      if (!this.textures.exists(key)) {
+        this.load.image(key, path);
+      }
+    };
+
+    safeLoad(`${charKey}_front`, c.front);
+    safeLoad(`${charKey}_walk_a`, c.walkA);
+    safeLoad(`${charKey}_walk_b`, c.walkB);
+    safeLoad(`${charKey}_jump`, c.jump);
+    safeLoad(`${charKey}_hit`, c.hit);
+
+    safeLoad("box", ASSETS.box);
+    safeLoad("key", ASSETS.key);
     const platformPath = ASSETS.platforms[this.stageIndex] || ASSETS.platforms[0];
-    this.load.image("platform_" + this.stageIndex, platformPath);
-    this.load.image("ground_tile", ASSETS.groundTile);
-    this.load.image("enemy_walk_a", ASSETS.enemyWalkA);
-    this.load.image("enemy_walk_b", ASSETS.enemyWalkB);
-    this.load.image("spike", ASSETS.spike);
+    safeLoad("platform_" + this.stageIndex, platformPath);
+    safeLoad("ground_tile", ASSETS.groundTile);
+    safeLoad("enemy_walk_a", ASSETS.enemyWalkA);
+    safeLoad("enemy_walk_b", ASSETS.enemyWalkB);
+    safeLoad("spike", ASSETS.spike);
 
     const bgPath = ASSETS.backgrounds[this.stageIndex] || ASSETS.backgrounds[0];
-    this.load.image("bg_" + this.stageIndex, bgPath);
+    safeLoad("bg_" + this.stageIndex, bgPath);
   }
 
   // ---------- CREATE ----------
@@ -55,6 +64,9 @@ class StageScene extends Phaser.Scene {
     const stage = STAGES[this.stageIndex];
 
     this.cameras.main.fadeIn(500);
+
+    // Pastikan texture fallback selalu tersedia
+    this.generateFallbackTextures();
 
     this.createBackground();
     this.createHUD(stage);
@@ -87,6 +99,74 @@ class StageScene extends Phaser.Scene {
     // ============================================================
     if (window.IS_TOUCH_DEVICE) {
       this.createTouchControls();
+    }
+  }
+
+  // ============================================================
+  // GENERATE FALLBACK TEXTURES (untuk tile kecil/indexed PNG)
+  // ============================================================
+  generateFallbackTextures() {
+    // Box ❓ — Kuning dengan border gelap
+    if (!this.textures.exists("box_gen")) {
+      const boxGfx = this.make.graphics({ x: 0, y: 0, add: false });
+      boxGfx.fillStyle(0xf0a000, 1);
+      boxGfx.fillRect(0, 0, 40, 40);
+      boxGfx.lineStyle(3, 0x4a2800, 1);
+      boxGfx.strokeRect(1, 1, 38, 38);
+      // Tambah efek gradient bawah
+      boxGfx.fillStyle(0xc87800, 1);
+      boxGfx.fillRect(2, 30, 36, 8);
+      boxGfx.generateTexture("box_gen", 40, 40);
+      boxGfx.destroy();
+    }
+
+    // Key 🔑 — Emas
+    if (!this.textures.exists("key_gen")) {
+      const keyGfx = this.make.graphics({ x: 0, y: 0, add: false });
+      keyGfx.fillStyle(0xffd700, 1);
+      keyGfx.fillCircle(12, 12, 10);
+      keyGfx.fillStyle(0xffa500, 1);
+      keyGfx.fillCircle(12, 12, 6);
+      keyGfx.fillStyle(0xffd700, 1);
+      keyGfx.fillRect(18, 10, 14, 4);
+      keyGfx.fillRect(28, 14, 4, 5);
+      keyGfx.fillRect(24, 14, 4, 4);
+      keyGfx.lineStyle(1.5, 0x8b6914, 1);
+      keyGfx.strokeCircle(12, 12, 10);
+      keyGfx.generateTexture("key_gen", 36, 24);
+      keyGfx.destroy();
+    }
+
+    // Enemy 🐸 — Hijau
+    if (!this.textures.exists("enemy_gen_a")) {
+      const eGfx = this.make.graphics({ x: 0, y: 0, add: false });
+      eGfx.fillStyle(0x2ecc40, 1);
+      eGfx.fillEllipse(18, 18, 28, 22);
+      eGfx.fillStyle(0xffffff, 1);
+      eGfx.fillCircle(11, 13, 5);
+      eGfx.fillCircle(25, 13, 5);
+      eGfx.fillStyle(0x222222, 1);
+      eGfx.fillCircle(11, 13, 3);
+      eGfx.fillCircle(25, 13, 3);
+      eGfx.fillStyle(0xff6666, 1);
+      eGfx.fillRect(10, 21, 16, 3);
+      eGfx.generateTexture("enemy_gen_a", 36, 30);
+      eGfx.destroy();
+    }
+    if (!this.textures.exists("enemy_gen_b")) {
+      const eGfx2 = this.make.graphics({ x: 0, y: 0, add: false });
+      eGfx2.fillStyle(0x27ae60, 1);
+      eGfx2.fillEllipse(18, 18, 28, 22);
+      eGfx2.fillStyle(0xffffff, 1);
+      eGfx2.fillCircle(11, 13, 5);
+      eGfx2.fillCircle(25, 13, 5);
+      eGfx2.fillStyle(0x222222, 1);
+      eGfx2.fillCircle(11, 13, 3);
+      eGfx2.fillCircle(25, 13, 3);
+      eGfx2.fillStyle(0xff4444, 1);
+      eGfx2.fillRect(10, 22, 16, 3);
+      eGfx2.generateTexture("enemy_gen_b", 36, 30);
+      eGfx2.destroy();
     }
   }
 
@@ -177,14 +257,16 @@ class StageScene extends Phaser.Scene {
       const groundColor = stage.groundColor || 0x8b4513;
       const alpha = isVisible ? 1 : 0.001;
 
-      const ground = this.add.rectangle(g.x, g.y, g.w, g.h, groundColor, alpha);
-
+      // Buat visual rectangle
+      const visual = this.add.rectangle(g.x, g.y, g.w, g.h, groundColor, alpha);
       if (isVisible) {
-        ground.setStrokeStyle(3, 0x000000);
+        visual.setStrokeStyle(3, 0x000000);
       }
 
-      this.physics.add.existing(ground, true);
-      this.groundGroup.add(ground);
+      // Buat physics body terpisah — pastikan tepat aligned
+      this.physics.add.existing(visual, true);
+      visual.body.updateFromGameObject();
+      this.groundGroup.add(visual);
     });
   }
 
@@ -205,6 +287,7 @@ class StageScene extends Phaser.Scene {
 
       const body = this.add.rectangle(p.x, bodyY, p.w, bodyHeight, 0x000000, 0);
       this.physics.add.existing(body, true);
+      body.body.updateFromGameObject();
       this.platformGroup.add(body);
     });
   }
@@ -248,6 +331,7 @@ class StageScene extends Phaser.Scene {
       const spike = this.add.triangle(s.x, s.y, 0, s.h, s.w / 2, 0, s.w, s.h, 0xe52521);
       spike.setStrokeStyle(2, 0x000000);
       this.physics.add.existing(spike, true);
+      spike.body.updateFromGameObject();
       this.spikeGroup.add(spike);
     });
   }
@@ -256,17 +340,25 @@ class StageScene extends Phaser.Scene {
   // BOXES ❓
   // ============================================================
   createBoxes(stage) {
+    // Pilih texture: box_gen (generated) atau box (PNG jika valid)
+    const boxTex = this.textures.exists("box_gen") ? "box_gen" : "box";
+
     stage.boxes.forEach((b, i) => {
-      const box = this.physics.add.staticImage(b.x, b.y, "box").setScale(2);
+      const boxSize = 40; // ukuran visual box dalam px
+      const box = this.physics.add.staticImage(b.x, b.y, boxTex);
+      box.setDisplaySize(boxSize, boxSize);
       box.boxIndex = i;
       box.isOpened = false;
+      box.refreshBody();
 
       box.qmark = this.add
         .text(b.x, b.y, "?", {
-          fontSize: "32px",
+          fontSize: "26px",
           fontFamily: "Arial",
-          color: "#000000",
+          color: "#ffffff",
           fontStyle: "bold",
+          stroke: "#000000",
+          strokeThickness: 3,
         })
         .setOrigin(0.5)
         .setDepth(1);
@@ -279,8 +371,11 @@ class StageScene extends Phaser.Scene {
   // KEYS 🔑
   // ============================================================
   createKeys(stage) {
+    const keyTex = this.textures.exists("key_gen") ? "key_gen" : "key";
+
     stage.keys.forEach((k, i) => {
-      const key = this.physics.add.sprite(k.x, k.y, "key").setScale(1.5);
+      const key = this.physics.add.sprite(k.x, k.y, keyTex);
+      key.setDisplaySize(36, 24);
       key.keyIndex = i;
       key.collected = false;
 
@@ -304,17 +399,37 @@ class StageScene extends Phaser.Scene {
   // ENEMIES
   // ============================================================
   createEnemies(stage) {
+    const useGen = this.textures.exists("enemy_gen_a");
+    const frameA = useGen ? "enemy_gen_a" : "enemy_walk_a";
+    const frameB = useGen ? "enemy_gen_b" : "enemy_walk_b";
+    const enemyAnimKey = "enemy_walk_gen";
+
+    if (!this.anims.exists(enemyAnimKey)) {
+      this.anims.create({
+        key: enemyAnimKey,
+        frames: [{ key: frameA }, { key: frameB }],
+        frameRate: 6,
+        repeat: -1,
+      });
+    }
+
+    // Fallback legacy anim
     if (!this.anims.exists("enemy_walk")) {
       this.anims.create({
         key: "enemy_walk",
-        frames: [{ key: "enemy_walk_a" }, { key: "enemy_walk_b" }],
+        frames: [{ key: frameA }, { key: frameB }],
         frameRate: 6,
         repeat: -1,
       });
     }
 
     stage.enemies.forEach((e) => {
-      const enemy = this.physics.add.sprite(e.x, e.y, "enemy_walk_a").setScale(1.5);
+      const enemy = this.physics.add.sprite(e.x, e.y, frameA);
+      if (useGen) {
+        enemy.setDisplaySize(36, 30);
+      } else {
+        enemy.setScale(1.5);
+      }
       enemy.speed = e.speed;
       enemy.direction = 1;
       enemy.setVelocityX(e.speed);
@@ -323,12 +438,17 @@ class StageScene extends Phaser.Scene {
       enemy.patrolMin = e.patrolMin !== undefined ? e.patrolMin : null;
       enemy.patrolMax = e.patrolMax !== undefined ? e.patrolMax : null;
 
-      const bodyW = 14;
-      const bodyH = 14;
-      enemy.body.setSize(bodyW, bodyH);
-      enemy.body.setOffset((enemy.width - bodyW) / 2, (enemy.height - bodyH) / 2);
+      // Body size: 24×20 visual
+      const visW = 24;
+      const visH = 20;
+      const texW = enemy.width;
+      const texH = enemy.height;
+      const scaleX = enemy.scaleX;
+      const scaleY = enemy.scaleY;
+      enemy.body.setSize(visW / scaleX, visH / scaleY);
+      enemy.body.setOffset((texW - visW / scaleX) / 2, (texH - visH / scaleY) / 2);
 
-      enemy.anims.play("enemy_walk", true);
+      enemy.anims.play(enemyAnimKey, true);
       enemy.flipX = false;
 
       this.enemyGroup.add(enemy);
@@ -342,136 +462,147 @@ class StageScene extends Phaser.Scene {
     const stage = STAGES[this.stageIndex];
     const firstGround = stage.grounds[0];
     const groundTop = firstGround.y - firstGround.h / 2;
-    const spawnY = groundTop - 40;
+    const spawnY = groundTop - 50;
+    const charKey = this.characterKey || "green";
 
-    this.player = this.physics.add.sprite(60, spawnY, "player_front").setScale(0.2);
+    this.player = this.physics.add.sprite(60, spawnY, `${charKey}_front`).setScale(0.2);
     this.player.setCollideWorldBounds(false);
 
-    const bodyW = 60;
-    const bodyH = 80;
-    this.player.body.setSize(bodyW, bodyH);
-    this.player.body.setOffset((this.player.width - bodyW) / 2, this.player.height - bodyH - 20);
+    this.setPlayerBody();
 
-    if (!this.anims.exists("walk")) {
+    const animKey = `${charKey}_walk_anim`;
+    if (!this.anims.exists(animKey)) {
       this.anims.create({
-        key: "walk",
-        frames: [{ key: "player_walk_a" }, { key: "player_walk_b" }],
+        key: animKey,
+        frames: [{ key: `${charKey}_walk_a` }, { key: `${charKey}_walk_b` }],
         frameRate: 8,
         repeat: -1,
       });
     }
   }
 
+  setPlayerBody() {
+    if (!this.player || !this.player.body) return;
+    // Sprite texture is 256×256, displayed at scale 0.2 → visual ~51×51px
+    // setSize() uses pre-scale (texture) pixels, so to get a 36×46 visual body:
+    //   bodyW_tex = 36 / 0.2 = 180, bodyH_tex = 46 / 0.2 = 230
+    const SCALE = 0.2;
+    const visualW = 36;
+    const visualH = 46;
+    const bodyW = Math.round(visualW / SCALE);  // 180
+    const bodyH = Math.round(visualH / SCALE);  // 230
+    const texW = this.player.width;   // 256
+    const texH = this.player.height;  // 256
+    const offsetX = (texW - bodyW) / 2;               // center horizontally
+    const offsetY = texH - bodyH;                      // align to bottom of sprite
+    this.player.body.setSize(bodyW, bodyH);
+    this.player.body.setOffset(offsetX, offsetY);
+  }
+
   // ============================================================
-  // TOUCH CONTROLS — tombol virtual untuk mobile
+  // TOUCH CONTROLS — tombol virtual responsive & multi-touch
   // ============================================================
   createTouchControls() {
-    const alpha = 0.35;
-    const btnSize = 55;
-    const btnColor = 0x000000;
+    const alpha = 0.45;
+    const btnRadius = 30;
+    const btnColor = 0x0f172a;
+    const activeColor = 0xfbd000;
     const iconColor = "#ffffff";
 
-    // State tombol (buat tracking touch)
     this.touchLeft = false;
     this.touchRight = false;
     this.touchJump = false;
 
-    // ---------- TOMBOL KIRI ----------
-    const btnLeft = this.add
-      .circle(60, 340, btnSize / 2, btnColor, alpha)
-      .setStrokeStyle(3, 0xffffff, 0.6)
-      .setDepth(500)
-      .setScrollFactor(0)
-      .setInteractive();
+    // Track active pointer IDs untuk multi-touch sejati
+    this.pointersState = {
+      left: null,
+      right: null,
+      jump: null,
+    };
 
-    this.add
-      .text(60, 340, "◀", {
-        fontSize: "26px",
-        fontFamily: "Arial",
-        color: iconColor,
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(501)
-      .setScrollFactor(0);
+    // ---------- HELPER BIKIN TOMBOL TOUCH ----------
+    const createBtn = (x, y, iconStr, labelKey) => {
+      const container = this.add.container(x, y).setDepth(1000).setScrollFactor(0);
 
-    // ---------- TOMBOL KANAN ----------
-    const btnRight = this.add
-      .circle(140, 340, btnSize / 2, btnColor, alpha)
-      .setStrokeStyle(3, 0xffffff, 0.6)
-      .setDepth(500)
-      .setScrollFactor(0)
-      .setInteractive();
+      const circle = this.add
+        .circle(0, 0, btnRadius, btnColor, alpha)
+        .setStrokeStyle(3, 0xffffff, 0.7)
+        .setInteractive();
 
-    this.add
-      .text(140, 340, "▶", {
-        fontSize: "26px",
-        fontFamily: "Arial",
-        color: iconColor,
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(501)
-      .setScrollFactor(0);
+      const icon = this.add
+        .text(0, 0, iconStr, {
+          fontSize: "24px",
+          fontFamily: "Arial",
+          color: iconColor,
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5);
 
-    // ---------- TOMBOL LOMPAT ----------
-    const btnJump = this.add
-      .circle(740, 340, btnSize / 2, btnColor, alpha)
-      .setStrokeStyle(3, 0xffffff, 0.6)
-      .setDepth(500)
-      .setScrollFactor(0)
-      .setInteractive();
+      container.add([circle, icon]);
 
-    this.add
-      .text(740, 340, "▲", {
-        fontSize: "26px",
-        fontFamily: "Arial",
-        color: iconColor,
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(501)
-      .setScrollFactor(0);
+      const setPressed = (pressed, pointerId) => {
+        if (pressed) {
+          this[`touch${labelKey}`] = true;
+          this.pointersState[labelKey] = pointerId;
+          circle.setFillStyle(activeColor, 0.7);
+          circle.setStrokeStyle(3, 0xffffff, 1.0);
+          icon.setColor("#000000");
+          container.setScale(0.92);
 
-    // ---------- EVENT HANDLERS ----------
-    // Pakai pointerdown/pointerup biar bisa ditahan
-    btnLeft.on("pointerdown", () => {
-      this.touchLeft = true;
-      btnLeft.setFillStyle(0xffffff, 0.6);
-    });
-    btnLeft.on("pointerup", () => {
-      this.touchLeft = false;
-      btnLeft.setFillStyle(btnColor, alpha);
-    });
-    btnLeft.on("pointerout", () => {
-      this.touchLeft = false;
-      btnLeft.setFillStyle(btnColor, alpha);
-    });
+          if (navigator.vibrate) {
+            try {
+              navigator.vibrate(10);
+            } catch (e) { }
+          }
+        } else {
+          this[`touch${labelKey}`] = false;
+          this.pointersState[labelKey] = null;
+          circle.setFillStyle(btnColor, alpha);
+          circle.setStrokeStyle(3, 0xffffff, 0.7);
+          icon.setColor(iconColor);
+          container.setScale(1.0);
+        }
+      };
 
-    btnRight.on("pointerdown", () => {
-      this.touchRight = true;
-      btnRight.setFillStyle(0xffffff, 0.6);
-    });
-    btnRight.on("pointerup", () => {
-      this.touchRight = false;
-      btnRight.setFillStyle(btnColor, alpha);
-    });
-    btnRight.on("pointerout", () => {
-      this.touchRight = false;
-      btnRight.setFillStyle(btnColor, alpha);
-    });
+      circle.on("pointerdown", (pointer) => {
+        setPressed(true, pointer.id);
+      });
 
-    btnJump.on("pointerdown", () => {
-      this.touchJump = true;
-      btnJump.setFillStyle(0xffffff, 0.6);
-    });
-    btnJump.on("pointerup", () => {
-      this.touchJump = false;
-      btnJump.setFillStyle(btnColor, alpha);
-    });
-    btnJump.on("pointerout", () => {
-      this.touchJump = false;
-      btnJump.setFillStyle(btnColor, alpha);
+      circle.on("pointerup", (pointer) => {
+        if (this.pointersState[labelKey] === pointer.id || !pointer) {
+          setPressed(false, null);
+        }
+      });
+
+      circle.on("pointerout", (pointer) => {
+        if (this.pointersState[labelKey] === pointer.id) {
+          setPressed(false, null);
+        }
+      });
+
+      circle.on("pointercancel", () => {
+        setPressed(false, null);
+      });
+
+      return container;
+    };
+
+    // Tombol Kiri, Kanan, & Lompat
+    this.btnLeftObj = createBtn(60, 340, "◀", "Left");
+    this.btnRightObj = createBtn(140, 340, "▶", "Right");
+    this.btnJumpObj = createBtn(740, 340, "▲", "Jump");
+
+    // Global pointerup safety release
+    this.input.on("pointerup", (pointer) => {
+      Object.keys(this.pointersState).forEach((key) => {
+        if (this.pointersState[key] === pointer.id) {
+          this.pointersState[key] = null;
+          this[`touch${key}`] = false;
+          if (key === "Left" && this.btnLeftObj) this.btnLeftObj.getAt(0).setFillStyle(btnColor, alpha);
+          if (key === "Right" && this.btnRightObj) this.btnRightObj.getAt(0).setFillStyle(btnColor, alpha);
+          if (key === "Jump" && this.btnJumpObj) this.btnJumpObj.getAt(0).setFillStyle(btnColor, alpha);
+        }
+      });
     });
   }
 
@@ -512,12 +643,14 @@ class StageScene extends Phaser.Scene {
     }
 
     // ---------- INPUT & ANIMASI PLAYER ----------
-    // Gabungkan input keyboard + touch
     const movingLeft = this.cursors.left.isDown || this.touchLeft === true;
     const movingRight = this.cursors.right.isDown || this.touchRight === true;
     const onGround = this.player.body.blocked.down || this.player.body.touching.down;
+    const charKey = this.characterKey || "green";
 
-    if (!this.isInvulnerable) {
+    this.wasOnGround = onGround;
+
+    if (!this.isKnockedBack) {
       if (movingLeft) {
         this.player.setVelocityX(-200);
         this.player.flipX = true;
@@ -533,15 +666,17 @@ class StageScene extends Phaser.Scene {
       if (jumpPressed && onGround) {
         this.player.setVelocityY(-480);
         audioFX.playJump();
-        this.touchJump = false; // reset biar gak loncat terus
+        this.touchJump = false; // reset flag agar tak terulang
       }
     }
 
-    if (!this.isInvulnerable) {
+    if (!this.isKnockedBack) {
       if (!onGround) {
         if (this.player.anims.isPlaying) this.player.anims.stop();
-        if (this.player.texture.key !== "player_jump") {
-          this.player.setTexture("player_jump");
+        const jumpKey = `${charKey}_jump`;
+        if (this.player.texture.key !== jumpKey) {
+          this.player.setTexture(jumpKey);
+          this.setPlayerBody();
         }
       } else {
         if (movingLeft || movingRight) {
@@ -582,12 +717,10 @@ class StageScene extends Phaser.Scene {
       }
 
       enemy.setVelocityX(enemy.speed * enemy.direction);
-
-      // Sprite katak default hadap KIRI → flipX kalau jalan ke KANAN
       enemy.flipX = enemy.direction > 0;
 
       if (!enemy.anims.isPlaying) {
-        enemy.anims.play("enemy_walk", true);
+        enemy.anims.play("enemy_walk_gen", true);
       }
 
       if (enemy.y > 450) enemy.destroy();
@@ -595,17 +728,23 @@ class StageScene extends Phaser.Scene {
   }
 
   playWalkAnim() {
+    const charKey = this.characterKey || "green";
+    const animKey = `${charKey}_walk_anim`;
     if (!this.player.anims.isPlaying) {
-      this.player.anims.play("walk", true);
+      this.player.anims.play(animKey, true);
+      this.setPlayerBody();
     }
   }
 
   stopWalkAnim() {
+    const charKey = this.characterKey || "green";
+    const frontKey = `${charKey}_front`;
     if (this.player.anims.isPlaying) {
       this.player.anims.stop();
     }
-    if (this.player.texture.key !== "player_front") {
-      this.player.setTexture("player_front");
+    if (this.player.texture.key !== frontKey) {
+      this.player.setTexture(frontKey);
+      this.setPlayerBody();
     }
   }
 
@@ -631,9 +770,20 @@ class StageScene extends Phaser.Scene {
   }
 
   takeDamage(source) {
-    if (this.isInvulnerable) return;
+    if (this.isInvulnerable) {
+      if (source === "Pit") {
+        // Jika sedang kebal tapi jatuh ke jurang, cukup kembalikan ke awal tanpa mengurangi nyawa lagi
+        const firstGround = STAGES[this.stageIndex].grounds[0];
+        const groundTop = firstGround.y - firstGround.h / 2;
+        this.player.setPosition(60, groundTop - 50);
+        this.player.setVelocity(0, 0);
+      }
+      return;
+    }
 
     audioFX.playHurt();
+    this.cameras.main.shake(250, 0.012); // Camera shake feedback
+
     this.lives--;
     this.updateHUD();
 
@@ -643,10 +793,13 @@ class StageScene extends Phaser.Scene {
     }
 
     this.isInvulnerable = true;
+    this.isKnockedBack = true;
 
+    const charKey = this.characterKey || "green";
     if (this.player.anims.isPlaying) this.player.anims.stop();
-    this.player.setTexture("player_hit");
+    this.player.setTexture(`${charKey}_hit`);
     this.player.setFlipX(false);
+    this.setPlayerBody();
 
     const knockbackX = this.lastHitDirX || -1;
     const knockbackY = this.lastHitFromAbove ? 200 : -300;
@@ -656,23 +809,35 @@ class StageScene extends Phaser.Scene {
     this.lastHitDirX = -1;
     this.lastHitFromAbove = false;
 
-    this.tweens.add({
-      targets: this.player,
-      alpha: 0.2,
-      duration: 150,
-      yoyo: true,
-      repeat: 6,
-    });
+    let blinkTween = null;
+    if (source !== "Pit") {
+      blinkTween = this.tweens.add({
+        targets: this.player,
+        alpha: 0.2,
+        duration: 200,
+        yoyo: true,
+        repeat: 7, // ~3 seconds of blinking
+        onComplete: () => {
+          this.player.setAlpha(1);
+          this.isInvulnerable = false;
+        }
+      });
+    }
 
     this.time.delayedCall(500, () => {
       const firstGround = STAGES[this.stageIndex].grounds[0];
       const groundTop = firstGround.y - firstGround.h / 2;
 
-      this.player.setPosition(60, groundTop - 40);
+      this.player.setPosition(60, groundTop - 50);
       this.player.setVelocity(0, 0);
-      this.player.setAlpha(1);
-      this.player.setTexture("player_front");
-      this.isInvulnerable = false;
+      this.player.setTexture(`${charKey}_front`);
+      this.setPlayerBody();
+      this.isKnockedBack = false;
+
+      if (source === "Pit") {
+        this.player.setAlpha(1);
+        this.isInvulnerable = false;
+      }
     });
 
     const msgText = source === "Pit" ? "⚠️ Jatuh ke jurang!" : "⚠️ Terkena Rintangan!";
@@ -707,7 +872,8 @@ class StageScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
 
     if (this.player.anims.isPlaying) this.player.anims.stop();
-    this.player.setTexture("player_hit");
+    const charKey = this.characterKey || "green";
+    this.player.setTexture(`${charKey}_hit`);
     this.player.setFlipX(false);
 
     this.player.setVelocityY(-350);
