@@ -9,14 +9,16 @@ class QuestionScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.globalIndex = data.globalIndex;
+    this.globalIndex = data.globalIndex; // Slot (1-10) — buat label
+    this.questionIndex = data.questionIndex; // Soal asli (acak) — buat konten
     this.studentName = data.studentName;
     this.stageIndex = data.stageIndex;
     this.onAnswer = data.onAnswer;
   }
 
   create() {
-    const q = QUESTIONS[this.globalIndex];
+    // PAKAI questionIndex (bukan globalIndex) untuk konten soal
+    const q = QUESTIONS[this.questionIndex];
 
     // ---------- OVERLAY GELAP ----------
     this.overlay = this.add.rectangle(400, 200, 800, 400, 0x000000, 0.85).setDepth(100);
@@ -24,13 +26,9 @@ class QuestionScene extends Phaser.Scene {
     // ---------- PANEL UTAMA CONTAINER ----------
     this.panelContainer = this.add.container(400, 200).setDepth(101);
 
-    // Background Panel Putih
     const panelBg = this.add.rectangle(0, 0, 760, 375, 0xffffff).setStrokeStyle(5, 0x000000);
-
-    // Header strip kuning
     const headerBg = this.add.rectangle(0, -165, 760, 40, 0xfbd000).setStrokeStyle(3, 0x000000);
 
-    // Teks Label Header
     const labelText = this.add
       .text(0, -165, `❓ SOAL ${this.globalIndex + 1} DARI 10`, {
         fontSize: "14px",
@@ -40,7 +38,6 @@ class QuestionScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Teks Pertanyaan (wrapped & top-anchored)
     const questionText = this.add
       .text(0, -130, q.q, {
         fontSize: "13px",
@@ -55,20 +52,16 @@ class QuestionScene extends Phaser.Scene {
 
     this.panelContainer.add([panelBg, headerBg, labelText, questionText]);
 
-    // ---------- TOMBOL JAWABAN (4 pilihan) ----------
+    // ---------- TOMBOL JAWABAN ----------
     this.buttons = [];
     const startY = 40;
     const gap = 38;
 
     q.options.forEach((opt, i) => {
       const y = startY + i * gap;
-
       const btnContainer = this.add.container(0, y);
 
-      const btnBg = this.add
-        .rectangle(0, 0, 700, 32, 0xf8fafc)
-        .setStrokeStyle(2, 0x94a3b8)
-        .setInteractive({ useHandCursor: true });
+      const btnBg = this.add.rectangle(0, 0, 700, 32, 0xf8fafc).setStrokeStyle(2, 0x94a3b8).setInteractive({ useHandCursor: true });
 
       const labels = ["A", "B", "C", "D"];
       const btnText = this.add
@@ -83,7 +76,6 @@ class QuestionScene extends Phaser.Scene {
       btnContainer.add([btnBg, btnText]);
       this.panelContainer.add(btnContainer);
 
-      // Hover / Touch interaction
       btnBg.on("pointerover", () => {
         btnBg.setFillStyle(0xe2e8f0);
         btnBg.setStrokeStyle(2, 0x2563eb);
@@ -110,7 +102,7 @@ class QuestionScene extends Phaser.Scene {
       this.buttons.push({ bg: btnBg, text: btnText, container: btnContainer });
     });
 
-    // Pop-in Animation untuk panel
+    // Pop-in Animation
     this.panelContainer.setScale(0.85);
     this.panelContainer.setAlpha(0);
     this.tweens.add({
@@ -134,7 +126,8 @@ class QuestionScene extends Phaser.Scene {
       namaSiswa: this.studentName,
       stage: this.stageIndex + 1,
       soalKeStage: (this.globalIndex % 2) + 1,
-      soalGlobal: this.globalIndex + 1,
+      soalGlobal: this.globalIndex + 1, // Slot urutan di game (1-10)
+      soalAsli: this.questionIndex + 1, // ← Soal asli (1-10) buat guru cek
       pertanyaan: q.q,
       jawabanPemilih: q.options[chosenIndex],
       jawabanBenar: q.options[q.answer],
@@ -168,4 +161,3 @@ class QuestionScene extends Phaser.Scene {
     this.scene.stop();
   }
 }
-

@@ -27,6 +27,11 @@ class StageScene extends Phaser.Scene {
 
     this.lastHitDirX = -1;
     this.lastHitFromAbove = false;
+
+    // ============================================================
+    // URUTAN SOAL (ACAK) — diteruskan dari StartScene ke stage berikutnya
+    // ============================================================
+    this.questionOrder = data.questionOrder || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   }
 
   // ---------- PRELOAD ----------
@@ -65,7 +70,6 @@ class StageScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(500);
 
-    // Pastikan texture fallback selalu tersedia
     this.generateFallbackTextures();
 
     this.createBackground();
@@ -94,33 +98,30 @@ class StageScene extends Phaser.Scene {
 
     this.cursors = this.input.keyboard.createCursorKeys();
 
-    // ============================================================
-    // TOUCH CONTROLS (cuma muncul di HP/tablet)
-    // ============================================================
+    // TOUCH CONTROLS
     if (window.IS_TOUCH_DEVICE) {
       this.createTouchControls();
     }
   }
 
   // ============================================================
-  // GENERATE FALLBACK TEXTURES (untuk tile kecil/indexed PNG)
+  // GENERATE FALLBACK TEXTURES
   // ============================================================
   generateFallbackTextures() {
-    // Box ❓ — Kuning dengan border gelap
+    // Box ❓
     if (!this.textures.exists("box_gen")) {
       const boxGfx = this.make.graphics({ x: 0, y: 0, add: false });
       boxGfx.fillStyle(0xf0a000, 1);
       boxGfx.fillRect(0, 0, 40, 40);
       boxGfx.lineStyle(3, 0x4a2800, 1);
       boxGfx.strokeRect(1, 1, 38, 38);
-      // Tambah efek gradient bawah
       boxGfx.fillStyle(0xc87800, 1);
       boxGfx.fillRect(2, 30, 36, 8);
       boxGfx.generateTexture("box_gen", 40, 40);
       boxGfx.destroy();
     }
 
-    // Key 🔑 — Emas
+    // Key 🔑
     if (!this.textures.exists("key_gen")) {
       const keyGfx = this.make.graphics({ x: 0, y: 0, add: false });
       keyGfx.fillStyle(0xffd700, 1);
@@ -137,7 +138,7 @@ class StageScene extends Phaser.Scene {
       keyGfx.destroy();
     }
 
-    // Enemy 🐸 — Hijau
+    // Enemy 🐸 frame A
     if (!this.textures.exists("enemy_gen_a")) {
       const eGfx = this.make.graphics({ x: 0, y: 0, add: false });
       eGfx.fillStyle(0x2ecc40, 1);
@@ -153,6 +154,7 @@ class StageScene extends Phaser.Scene {
       eGfx.generateTexture("enemy_gen_a", 36, 30);
       eGfx.destroy();
     }
+    // Enemy 🐸 frame B
     if (!this.textures.exists("enemy_gen_b")) {
       const eGfx2 = this.make.graphics({ x: 0, y: 0, add: false });
       eGfx2.fillStyle(0x27ae60, 1);
@@ -257,13 +259,11 @@ class StageScene extends Phaser.Scene {
       const groundColor = stage.groundColor || 0x8b4513;
       const alpha = isVisible ? 1 : 0.001;
 
-      // Buat visual rectangle
       const visual = this.add.rectangle(g.x, g.y, g.w, g.h, groundColor, alpha);
       if (isVisible) {
         visual.setStrokeStyle(3, 0x000000);
       }
 
-      // Buat physics body terpisah — pastikan tepat aligned
       this.physics.add.existing(visual, true);
       visual.body.updateFromGameObject();
       this.groundGroup.add(visual);
@@ -340,11 +340,10 @@ class StageScene extends Phaser.Scene {
   // BOXES ❓
   // ============================================================
   createBoxes(stage) {
-    // Pilih texture: box_gen (generated) atau box (PNG jika valid)
     const boxTex = this.textures.exists("box_gen") ? "box_gen" : "box";
 
     stage.boxes.forEach((b, i) => {
-      const boxSize = 40; // ukuran visual box dalam px
+      const boxSize = 40;
       const box = this.physics.add.staticImage(b.x, b.y, boxTex);
       box.setDisplaySize(boxSize, boxSize);
       box.boxIndex = i;
@@ -413,7 +412,6 @@ class StageScene extends Phaser.Scene {
       });
     }
 
-    // Fallback legacy anim
     if (!this.anims.exists("enemy_walk")) {
       this.anims.create({
         key: "enemy_walk",
@@ -438,7 +436,6 @@ class StageScene extends Phaser.Scene {
       enemy.patrolMin = e.patrolMin !== undefined ? e.patrolMin : null;
       enemy.patrolMax = e.patrolMax !== undefined ? e.patrolMax : null;
 
-      // Body size: 24×20 visual
       const visW = 24;
       const visH = 20;
       const texW = enemy.width;
@@ -483,24 +480,21 @@ class StageScene extends Phaser.Scene {
 
   setPlayerBody() {
     if (!this.player || !this.player.body) return;
-    // Sprite texture is 256×256, displayed at scale 0.2 → visual ~51×51px
-    // setSize() uses pre-scale (texture) pixels, so to get a 36×46 visual body:
-    //   bodyW_tex = 36 / 0.2 = 180, bodyH_tex = 46 / 0.2 = 230
     const SCALE = 0.2;
     const visualW = 36;
     const visualH = 46;
-    const bodyW = Math.round(visualW / SCALE);  // 180
-    const bodyH = Math.round(visualH / SCALE);  // 230
-    const texW = this.player.width;   // 256
-    const texH = this.player.height;  // 256
-    const offsetX = (texW - bodyW) / 2;               // center horizontally
-    const offsetY = texH - bodyH;                      // align to bottom of sprite
+    const bodyW = Math.round(visualW / SCALE);
+    const bodyH = Math.round(visualH / SCALE);
+    const texW = this.player.width;
+    const texH = this.player.height;
+    const offsetX = (texW - bodyW) / 2;
+    const offsetY = texH - bodyH;
     this.player.body.setSize(bodyW, bodyH);
     this.player.body.setOffset(offsetX, offsetY);
   }
 
   // ============================================================
-  // TOUCH CONTROLS — tombol virtual responsive & multi-touch
+  // TOUCH CONTROLS
   // ============================================================
   createTouchControls() {
     const alpha = 0.45;
@@ -513,21 +507,16 @@ class StageScene extends Phaser.Scene {
     this.touchRight = false;
     this.touchJump = false;
 
-    // Track active pointer IDs untuk multi-touch sejati
     this.pointersState = {
       left: null,
       right: null,
       jump: null,
     };
 
-    // ---------- HELPER BIKIN TOMBOL TOUCH ----------
     const createBtn = (x, y, iconStr, labelKey) => {
       const container = this.add.container(x, y).setDepth(1000).setScrollFactor(0);
 
-      const circle = this.add
-        .circle(0, 0, btnRadius, btnColor, alpha)
-        .setStrokeStyle(3, 0xffffff, 0.7)
-        .setInteractive();
+      const circle = this.add.circle(0, 0, btnRadius, btnColor, alpha).setStrokeStyle(3, 0xffffff, 0.7).setInteractive();
 
       const icon = this.add
         .text(0, 0, iconStr, {
@@ -552,7 +541,7 @@ class StageScene extends Phaser.Scene {
           if (navigator.vibrate) {
             try {
               navigator.vibrate(10);
-            } catch (e) { }
+            } catch (e) {}
           }
         } else {
           this[`touch${labelKey}`] = false;
@@ -564,35 +553,26 @@ class StageScene extends Phaser.Scene {
         }
       };
 
-      circle.on("pointerdown", (pointer) => {
-        setPressed(true, pointer.id);
-      });
-
+      circle.on("pointerdown", (pointer) => setPressed(true, pointer.id));
       circle.on("pointerup", (pointer) => {
         if (this.pointersState[labelKey] === pointer.id || !pointer) {
           setPressed(false, null);
         }
       });
-
       circle.on("pointerout", (pointer) => {
         if (this.pointersState[labelKey] === pointer.id) {
           setPressed(false, null);
         }
       });
-
-      circle.on("pointercancel", () => {
-        setPressed(false, null);
-      });
+      circle.on("pointercancel", () => setPressed(false, null));
 
       return container;
     };
 
-    // Tombol Kiri, Kanan, & Lompat
     this.btnLeftObj = createBtn(60, 340, "◀", "Left");
     this.btnRightObj = createBtn(140, 340, "▶", "Right");
     this.btnJumpObj = createBtn(740, 340, "▲", "Jump");
 
-    // Global pointerup safety release
     this.input.on("pointerup", (pointer) => {
       Object.keys(this.pointersState).forEach((key) => {
         if (this.pointersState[key] === pointer.id) {
@@ -642,7 +622,7 @@ class StageScene extends Phaser.Scene {
       return;
     }
 
-    // ---------- INPUT & ANIMASI PLAYER ----------
+    // INPUT & ANIMASI
     const movingLeft = this.cursors.left.isDown || this.touchLeft === true;
     const movingRight = this.cursors.right.isDown || this.touchRight === true;
     const onGround = this.player.body.blocked.down || this.player.body.touching.down;
@@ -666,7 +646,7 @@ class StageScene extends Phaser.Scene {
       if (jumpPressed && onGround) {
         this.player.setVelocityY(-480);
         audioFX.playJump();
-        this.touchJump = false; // reset flag agar tak terulang
+        this.touchJump = false;
       }
     }
 
@@ -687,7 +667,7 @@ class StageScene extends Phaser.Scene {
       }
     }
 
-    // ---------- PATROLI MUSUH ----------
+    // PATROLI MUSUH
     const stage = STAGES[this.stageIndex];
     this.enemyGroup.getChildren().forEach((enemy) => {
       if (!enemy.body) return;
@@ -753,26 +733,21 @@ class StageScene extends Phaser.Scene {
   // ============================================================
   hitEnemy(player, enemy) {
     if (this.isInvulnerable || this.isTransitioning || this.isPaused) return;
-
     this.lastHitDirX = enemy.x < player.x ? 1 : -1;
     this.lastHitFromAbove = player.y < enemy.y - 20;
-
     this.takeDamage("Enemy");
   }
 
   hitSpike(player, spike) {
     if (this.isInvulnerable || this.isTransitioning || this.isPaused) return;
-
     this.lastHitDirX = player.flipX ? 1 : -1;
     this.lastHitFromAbove = false;
-
     this.takeDamage("Spike");
   }
 
   takeDamage(source) {
     if (this.isInvulnerable) {
       if (source === "Pit") {
-        // Jika sedang kebal tapi jatuh ke jurang, cukup kembalikan ke awal tanpa mengurangi nyawa lagi
         const firstGround = STAGES[this.stageIndex].grounds[0];
         const groundTop = firstGround.y - firstGround.h / 2;
         this.player.setPosition(60, groundTop - 50);
@@ -782,7 +757,7 @@ class StageScene extends Phaser.Scene {
     }
 
     audioFX.playHurt();
-    this.cameras.main.shake(250, 0.012); // Camera shake feedback
+    this.cameras.main.shake(250, 0.012);
 
     this.lives--;
     this.updateHUD();
@@ -809,18 +784,17 @@ class StageScene extends Phaser.Scene {
     this.lastHitDirX = -1;
     this.lastHitFromAbove = false;
 
-    let blinkTween = null;
     if (source !== "Pit") {
-      blinkTween = this.tweens.add({
+      this.tweens.add({
         targets: this.player,
         alpha: 0.2,
         duration: 200,
         yoyo: true,
-        repeat: 7, // ~3 seconds of blinking
+        repeat: 7,
         onComplete: () => {
           this.player.setAlpha(1);
           this.isInvulnerable = false;
-        }
+        },
       });
     }
 
@@ -947,6 +921,7 @@ class StageScene extends Phaser.Scene {
           characterKey: this.characterKey,
           answersMap: this.answersMap,
           lives: 3,
+          questionOrder: this.questionOrder, // ← TERUSKAN
         });
       });
     });
@@ -1056,18 +1031,22 @@ class StageScene extends Phaser.Scene {
   }
 
   // ============================================================
-  // SHOW QUESTION — TANPA FETCH! (fetch cuma di FinishScene)
+  // SHOW QUESTION — pakai questionOrder untuk acak soal
   // ============================================================
   showQuestion(globalIndex) {
     this.isPaused = true;
     this.scene.pause();
 
+    // globalIndex = slot (0-9) → untuk label & tracking
+    // actualQuestionIndex = soal asli (acak) → untuk konten soal
+    const actualQuestionIndex = this.questionOrder[globalIndex];
+
     this.scene.launch("QuestionScene", {
       globalIndex: globalIndex,
+      questionIndex: actualQuestionIndex, // ← KIRIM soal asli
       studentName: this.studentName,
       stageIndex: this.stageIndex,
       onAnswer: (answerData) => {
-        // Simpan jawaban ke memory (tanpa fetch)
         this.answersMap[globalIndex] = answerData;
         this.questionsDone++;
         this.updateHUD();
@@ -1085,10 +1064,9 @@ class StageScene extends Phaser.Scene {
   // ============================================================
   goToNextStage() {
     this.isTransitioning = true;
-    this.cameras.main.fadeOut(400); // ← dari 600 jadi 400ms
+    this.cameras.main.fadeOut(400);
 
     this.time.delayedCall(500, () => {
-      // ← dari 800 jadi 500ms
       if (this.stageIndex + 1 < STAGES.length) {
         this.scene.start("StageScene", {
           stageIndex: this.stageIndex + 1,
@@ -1097,6 +1075,7 @@ class StageScene extends Phaser.Scene {
           characterKey: this.characterKey,
           answersMap: this.answersMap,
           lives: this.lives,
+          questionOrder: this.questionOrder, // ← TERUSKAN
         });
       } else {
         this.scene.start("FinishScene", {

@@ -15,9 +15,7 @@ class StartScene extends Phaser.Scene {
       }
     };
 
-    // ============================================
     // 1. LOAD SEMUA KARAKTER (5 karakter × 5 sprite)
-    // ============================================
     Object.keys(ASSETS.characters).forEach((key) => {
       const c = ASSETS.characters[key];
       safeLoad(`${key}_front`, c.front);
@@ -27,24 +25,18 @@ class StartScene extends Phaser.Scene {
       safeLoad(`${key}_hit`, c.hit);
     });
 
-    // ============================================
     // 2. LOAD SEMUA BACKGROUND (5 stage)
-    // ============================================
     ASSETS.backgrounds.forEach((bgPath, i) => {
       safeLoad("bg_" + i, bgPath);
     });
     safeLoad("bgStart", ASSETS.bgStart);
 
-    // ============================================
     // 3. LOAD SEMUA PLATFORM (5 stage)
-    // ============================================
     ASSETS.platforms.forEach((platPath, i) => {
       safeLoad("platform_" + i, platPath);
     });
 
-    // ============================================
-    // 4. LOAD OBJEK GAME (box, key, enemy, spike)
-    // ============================================
+    // 4. LOAD OBJEK GAME
     safeLoad("box", ASSETS.box);
     safeLoad("key", ASSETS.key);
     safeLoad("ground_tile", ASSETS.groundTile);
@@ -52,9 +44,7 @@ class StartScene extends Phaser.Scene {
     safeLoad("enemy_walk_b", ASSETS.enemyWalkB);
     safeLoad("spike", ASSETS.spike);
 
-    // ============================================
     // 5. BGM
-    // ============================================
     if (!this.cache.audio.exists("bgm")) {
       this.load.audio("bgm", "assets/audio/bgm.mp3");
     }
@@ -76,13 +66,13 @@ class StartScene extends Phaser.Scene {
       }
     });
 
-    // ---------- BACKGROUND ----------
+    // BACKGROUND
     const bg = this.add.image(400, 200, "bgStart");
     bg.setDisplaySize(800, 400);
     bg.setDepth(-10);
     this.add.rectangle(400, 200, 800, 400, 0x000000, 0.25).setDepth(-9);
 
-    // ---------- FORM HTML ----------
+    // FORM HTML
     const form = document.getElementById("start-form");
     if (form) form.classList.add("visible");
 
@@ -91,7 +81,7 @@ class StartScene extends Phaser.Scene {
     if (namaEl) namaEl.value = "";
     if (absenEl) absenEl.value = "";
 
-    // ---------- BGM ----------
+    // BGM
     if (this.cache.audio.exists("bgm")) {
       if (!this.bgmSound || !this.bgmSound.isPlaying) {
         this.bgmSound = this.sound.add("bgm", { loop: true, volume: 0.4 });
@@ -99,7 +89,7 @@ class StartScene extends Phaser.Scene {
       }
     }
 
-    // ---------- JUDUL BER-ANIMASI ----------
+    // JUDUL
     const title = this.add
       .text(400, 24, "🍄 GAME KUIS 🍄", {
         fontSize: "30px",
@@ -111,7 +101,6 @@ class StartScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Bounce tween pada judul
     this.tweens.add({
       targets: title,
       y: 27,
@@ -121,7 +110,7 @@ class StartScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
     });
 
-    // ---------- SUBJUDUL ----------
+    // SUBJUDUL
     this.add
       .text(400, 56, "Pilih Karakter Kamu:", {
         fontSize: "13px",
@@ -133,7 +122,7 @@ class StartScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // ---------- 5 PILIHAN KARAKTER (LAYOUT DENGAN HEADROOM PAS) ----------
+    // 5 PILIHAN KARAKTER
     const charKeys = Object.keys(ASSETS.characters);
     const startX = 130;
     const gapX = 135;
@@ -194,7 +183,7 @@ class StartScene extends Phaser.Scene {
 
     this.selectCharacter(this.selectedChar);
 
-    // ---------- TOMBOL MULAI BER-ANIMASI ----------
+    // TOMBOL MULAI
     const btnContainer = this.add.container(400, 356);
 
     const btn = this.add.rectangle(0, 0, 210, 40, 0xe52521).setStrokeStyle(4, 0x000000).setInteractive({ useHandCursor: true });
@@ -210,7 +199,6 @@ class StartScene extends Phaser.Scene {
 
     btnContainer.add([btn, btnText]);
 
-    // Pulse animation untuk tombol Mulai
     this.tweens.add({
       targets: btnContainer,
       scaleX: 1.04,
@@ -248,7 +236,6 @@ class StartScene extends Phaser.Scene {
       const preview = this.charPreviews[k];
       const label = this.charLabels[k];
 
-      // Hentikan tween aktif pada box & preview
       this.tweens.killTweensOf(box);
       this.tweens.killTweensOf(preview);
 
@@ -260,7 +247,6 @@ class StartScene extends Phaser.Scene {
         box.setScale(1.05);
         preview.setScale(BASE_PREVIEW_SCALE * 1.05);
 
-        // Pop effect singkat saat terpilih
         this.tweens.add({
           targets: box,
           scaleX: 1.08,
@@ -276,7 +262,6 @@ class StartScene extends Phaser.Scene {
           yoyo: true,
         });
 
-        // Mainkan animasi jalan pada preview karakter yang terpilih
         const animKey = `${k}_walk_anim`;
         if (this.anims.exists(animKey)) {
           preview.anims.play(animKey, true);
@@ -288,7 +273,6 @@ class StartScene extends Phaser.Scene {
 
         box.setScale(1.0);
 
-        // Stop animasi dan kembalikan ke sprite front
         if (preview.anims.isPlaying) {
           preview.anims.stop();
         }
@@ -335,6 +319,18 @@ class StartScene extends Phaser.Scene {
     const form = document.getElementById("start-form");
     if (form) form.classList.remove("visible");
 
+    // ============================================================
+    // ACAK URUTAN SOAL (Fisher-Yates Shuffle)
+    // Setiap murid dapat urutan soal BERBEDA → gak bisa nyontek
+    // ============================================================
+    const questionOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    for (let i = questionOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+    }
+    console.log("🎲 Urutan soal untuk murid ini:", questionOrder);
+    // ============================================================
+
     this.cameras.main.fadeOut(500);
     this.time.delayedCall(500, () => {
       this.scene.start("StageScene", {
@@ -344,6 +340,7 @@ class StartScene extends Phaser.Scene {
         characterKey: this.selectedChar,
         answersMap: {},
         lives: 3,
+        questionOrder: questionOrder, // ← KIRIM urutan soal
       });
     });
   }
